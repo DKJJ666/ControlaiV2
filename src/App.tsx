@@ -1,13 +1,14 @@
 import LandingPage from './LandingPage'
-import { useState } from 'react'
+import { useState, useRef, useEffect } from 'react'
 import { useIsMobile } from './useIsMobile'
+import logoImg from './imports/ChatGPT_Image_19_de_ago._de_2026__23_40_02.png'
 import {
   LayoutDashboard, ShoppingCart, Package, DollarSign, Users, BarChart2,
   Settings, HelpCircle, Search, Bell, Plus, ArrowUpRight, ArrowDownRight,
   AlertTriangle, CheckCircle, Clock, ChevronRight, X, MessageCircle,
   LogIn, Eye, EyeOff, TrendingUp, Truck, FileText, Download,
   Filter, MoreHorizontal, RefreshCw, Zap, Phone, Send, Menu, ChevronLeft,
-  CreditCard, Banknote, Smartphone, Star, RotateCcw
+  CreditCard, Banknote, Smartphone, Star, RotateCcw, Bot, Sparkles, Lightbulb, TrendingDown
 } from 'lucide-react'
 import {
   LineChart, Line, AreaChart, Area, BarChart, Bar, XAxis, YAxis,
@@ -16,7 +17,7 @@ import {
 
 // ─── TYPES ────────────────────────────────────────────────────────────────────
 type Screen = 'landing' | 'login' | 'dashboard' | 'vendas' | 'nova-venda' | 'estoque' |
-  'add-produto' | 'financeiro' | 'clientes' | 'relatorios' | 'atendimento' | 'configuracoes'
+  'add-produto' | 'financeiro' | 'clientes' | 'relatorios' | 'atendimento' | 'configuracoes' | 'ia-assistente'
 
 // ─── DATA ────────────────────────────────────────────────────────────────────
 const salesData7d = [
@@ -277,6 +278,7 @@ const navItems = [
   { id: 'clientes', label: 'Clientes', icon: Users },
   { id: 'relatorios', label: 'Relatórios', icon: BarChart2 },
   { id: 'atendimento', label: 'Atendimento', icon: MessageCircle },
+  { id: 'ia-assistente', label: 'IA Assistente', icon: Bot, highlight: true },
   { id: 'configuracoes', label: 'Configurações', icon: Settings },
 ]
 
@@ -284,7 +286,7 @@ function BottomNav({ screen, setScreen }: { screen: Screen; setScreen: (s: Scree
   const items = [
     { id: 'dashboard', label: 'Início', icon: LayoutDashboard },
     { id: 'vendas', label: 'Vendas', icon: ShoppingCart },
-    { id: 'estoque', label: 'Estoque', icon: Package },
+    { id: 'ia-assistente', label: 'IA', icon: Bot },
     { id: 'financeiro', label: 'Financeiro', icon: DollarSign },
     { id: 'configuracoes', label: 'Config', icon: Settings },
   ]
@@ -367,7 +369,7 @@ function Sidebar({ screen, setScreen, collapsed, setCollapsed }: {
 
       {/* Nav */}
       <nav style={{ flex: 1, padding: '12px 0', overflowY: 'auto' }}>
-        {navItems.map(({ id, label, icon: Icon }) => {
+        {navItems.map(({ id, label, icon: Icon, highlight }: any) => {
           const active = screen === id
           return (
             <button
@@ -378,10 +380,10 @@ function Sidebar({ screen, setScreen, collapsed, setCollapsed }: {
                 width: '100%', display: 'flex', alignItems: 'center',
                 gap: 10, padding: collapsed ? '10px 0' : '10px 16px',
                 justifyContent: collapsed ? 'center' : 'flex-start',
-                background: active ? 'rgba(47,155,255,0.10)' : 'none',
-                borderLeft: active ? `2px solid ${C.amber}` : '2px solid transparent',
+                background: active ? 'rgba(47,155,255,0.10)' : highlight && !active ? 'rgba(53,211,154,0.06)' : 'none',
+                borderLeft: active ? `2px solid ${C.amber}` : highlight ? `2px solid rgba(53,211,154,0.4)` : '2px solid transparent',
                 borderRight: 'none', borderTop: 'none', borderBottom: 'none',
-                color: active ? C.amber : C.muted,
+                color: active ? C.amber : highlight ? C.teal : C.muted,
                 cursor: 'pointer',
                 fontFamily: 'Inter, sans-serif', fontSize: 14, fontWeight: active ? 500 : 400,
                 borderRadius: 0, whiteSpace: 'nowrap',
@@ -389,6 +391,13 @@ function Sidebar({ screen, setScreen, collapsed, setCollapsed }: {
             >
               <Icon size={18} />
               {!collapsed && label}
+              {!collapsed && highlight && !active && (
+                <span style={{
+                  marginLeft: 'auto', fontSize: 10, fontWeight: 700, color: C.teal,
+                  background: 'rgba(53,211,154,0.12)', border: '1px solid rgba(53,211,154,0.3)',
+                  borderRadius: 4, padding: '1px 5px', letterSpacing: '0.05em'
+                }}>NOVO</span>
+              )}
             </button>
           )
         })}
@@ -1621,6 +1630,247 @@ function ConfiguracoesScreen() {
   )
 }
 
+// ─── IA ASSISTENTE ───────────────────────────────────────────────────────────
+type IAMsg = { from: 'user' | 'ai'; text: string; hora: string }
+
+const iaSuggestions = [
+  { icon: TrendingUp, text: 'Como aumentar minhas vendas este mês?' },
+  { icon: AlertTriangle, text: 'Quais produtos estão com estoque crítico?' },
+  { icon: DollarSign, text: 'Como melhorar meu fluxo de caixa?' },
+  { icon: Users, text: 'Dicas para fidelizar clientes recorrentes' },
+]
+
+const iaResponses: Record<string, string> = {
+  vendas: `📈 **Estratégias para aumentar suas vendas:**\n\n• **Combo de produtos**: Una hambúrguer + bebida com 10% de desconto — seu ticket médio subirá de R$ 74 para ~R$ 85.\n• **Horário de pico**: Suas vendas sobem 38% às sextas. Garanta estoque cheio na quinta.\n• **Reativação**: 3 clientes não compram há mais de 7 dias — envie um cupom de R$ 10 via WhatsApp.\n• **Cardápio digital**: Clientes que veem foto compram 24% mais. Adicione imagens aos produtos.`,
+  estoque: `📦 **Alertas de estoque — ação imediata:**\n\n🔴 **Crítico (zerar em < 2 dias):**\n• Batata frita 2kg — apenas 2 un. (mínimo: 10)\n• Suco de laranja 1L — apenas 3 un. (mínimo: 12)\n\n🟡 **Baixo (repor esta semana):**\n• Coca-Cola 350ml — 4 un. de 20 no mínimo\n• Hambúrguer artesanal — 7 de 15 no mínimo\n\n💡 **Dica**: Configure alertas automáticos para ser notificado 3 dias antes de atingir o mínimo.`,
+  caixa: `💰 **Como melhorar seu fluxo de caixa:**\n\n• **Receba mais via Pix**: Pix tem custo zero e liquidação imediata. Ofereça 2% de desconto para pagamentos em Pix.\n• **Negocie prazos**: Tente pagar fornecedores em 30 dias e receber vendas à vista — isso libera ~R$ 4.200 em capital.\n• **Corte saídas desnecessárias**: Identifiquei que suas saídas cresceram 4,3% este mês. Revise contratos fixos.\n• **Reserva de emergência**: Mantenha 2 meses de despesas fixas guardados (≈ R$ 3.600).`,
+  clientes: `🤝 **Fidelização de clientes — estratégias comprovadas:**\n\n• **Programa de pontos simples**: A cada R$ 100 gastos, o cliente ganha R$ 10. Juliana (R$ 6.780 gastos) adoraria.\n• **Aniversário deles**: Envie um desconto no mês de aniversário — custo baixo, impacto alto.\n• **WhatsApp direto**: Clientes que recebem mensagem personalizada voltam 2x mais rápido.\n• **Pedro Oliveira** é seu cliente mais valioso (31 pedidos). Dê a ele um status VIP com frete grátis.`,
+}
+
+function getIAResponse(text: string): string {
+  const t = text.toLowerCase()
+  if (t.includes('venda') || t.includes('fatura') || t.includes('aumentar')) return iaResponses.vendas
+  if (t.includes('estoque') || t.includes('produto') || t.includes('crítico')) return iaResponses.estoque
+  if (t.includes('caixa') || t.includes('dinheiro') || t.includes('fluxo') || t.includes('finan')) return iaResponses.caixa
+  if (t.includes('cliente') || t.includes('fideliz') || t.includes('recorrent')) return iaResponses.clientes
+  return `🤖 Entendido! Analisei os dados do seu negócio e vou te ajudar.\n\nCom base no seu histórico:\n• Vendas esta semana: **R$ 17.400** (+12,5%)\n• Produtos críticos: **4 itens** precisam de reposição\n• Clientes inativos: **3** não compram há 7+ dias\n\nMe diga mais especificamente o que quer melhorar: vendas, estoque, financeiro ou clientes? Vou dar uma análise detalhada com ações práticas.`
+}
+
+function IAAssistenteScreen() {
+  const isMobile = useIsMobile()
+  const [messages, setMessages] = useState<IAMsg[]>([
+    {
+      from: 'ai',
+      hora: 'agora',
+      text: `Olá, João! 👋 Sou a **IA do ControlAi**, sua assistente de negócios.\n\nAnalisei seus dados em tempo real:\n• 📈 Vendas hoje: **R$ 2.840** (+12,5%)\n• ⚠️ **4 produtos** com estoque crítico\n• 💰 Saldo atual: **R$ 8.420**\n\nComo posso te ajudar a crescer hoje?`,
+    }
+  ])
+  const [input, setInput] = useState('')
+  const [loading, setLoading] = useState(false)
+  const bottomRef = useRef<HTMLDivElement>(null)
+
+  useEffect(() => {
+    bottomRef.current?.scrollIntoView({ behavior: 'smooth' })
+  }, [messages, loading])
+
+  function sendMessage(text: string) {
+    if (!text.trim()) return
+    const hora = new Date().toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' })
+    setMessages(prev => [...prev, { from: 'user', text: text.trim(), hora }])
+    setInput('')
+    setLoading(true)
+    setTimeout(() => {
+      setMessages(prev => [...prev, { from: 'ai', text: getIAResponse(text), hora }])
+      setLoading(false)
+    }, 1200)
+  }
+
+  return (
+    <div style={{ flex: 1, display: 'flex', flexDirection: 'column', background: C.bg, overflow: 'hidden', paddingBottom: isMobile ? 60 : 0 }}>
+      {/* Header */}
+      <div style={{
+        padding: isMobile ? '16px 20px' : '20px 32px', borderBottom: `1px solid ${C.border}`,
+        background: C.panel, display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 12,
+      }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: 14 }}>
+          <div style={{
+            width: 44, height: 44, borderRadius: 12,
+            background: 'linear-gradient(135deg, rgba(53,211,154,0.2), rgba(47,155,255,0.2))',
+            border: '1px solid rgba(53,211,154,0.3)',
+            display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0,
+          }}>
+            <Bot size={22} color={C.teal} />
+          </div>
+          <div>
+            <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+              <h1 style={{ fontFamily: 'Space Grotesk', fontSize: isMobile ? 16 : 18, fontWeight: 700, margin: 0, color: C.text }}>
+                IA Assistente
+              </h1>
+              <span style={{
+                fontSize: 10, fontWeight: 700, color: C.teal, letterSpacing: '0.06em',
+                background: 'rgba(53,211,154,0.12)', border: '1px solid rgba(53,211,154,0.3)',
+                borderRadius: 4, padding: '2px 6px'
+              }}>CONTROLAI</span>
+            </div>
+            <p style={{ margin: 0, fontSize: 12, color: C.teal, display: 'flex', alignItems: 'center', gap: 5 }}>
+              <span style={{ width: 6, height: 6, borderRadius: '50%', background: C.teal, display: 'inline-block' }} />
+              Online — Analisando seus dados em tempo real
+            </p>
+          </div>
+        </div>
+        <div style={{ display: 'flex', alignItems: 'center', gap: 8, flexShrink: 0 }}>
+          <div style={{
+            padding: '6px 14px', background: 'rgba(47,155,255,0.08)',
+            border: `1px solid ${C.border}`, borderRadius: 8,
+            fontSize: 12, color: C.muted, display: isMobile ? 'none' : 'flex', alignItems: 'center', gap: 6
+          }}>
+            <Sparkles size={13} color={C.amber} />
+            Powered by ControlAi Intelligence
+          </div>
+        </div>
+      </div>
+
+      {/* Messages */}
+      <div style={{ flex: 1, overflowY: 'auto', padding: isMobile ? '16px' : '24px 32px', display: 'flex', flexDirection: 'column', gap: 16 }}>
+
+        {/* Suggestions — only if 1 message */}
+        {messages.length === 1 && (
+          <div style={{ display: 'grid', gridTemplateColumns: isMobile ? '1fr 1fr' : 'repeat(4, 1fr)', gap: 10, marginBottom: 8 }}>
+            {iaSuggestions.map((s, i) => (
+              <button key={i} onClick={() => sendMessage(s.text)} style={{
+                background: C.panel, border: `1px solid ${C.border}`, borderRadius: 10,
+                padding: '14px 14px', cursor: 'pointer', textAlign: 'left',
+                display: 'flex', flexDirection: 'column', gap: 8,
+                transition: 'border-color 0.15s',
+              }}
+                onMouseEnter={e => (e.currentTarget.style.borderColor = C.borderMed)}
+                onMouseLeave={e => (e.currentTarget.style.borderColor = C.border)}
+              >
+                <s.icon size={16} color={C.amber} />
+                <span style={{ fontSize: 12, color: C.muted, lineHeight: 1.4 }}>{s.text}</span>
+              </button>
+            ))}
+          </div>
+        )}
+
+        {messages.map((m, i) => (
+          <div key={i} style={{ display: 'flex', gap: 12, justifyContent: m.from === 'user' ? 'flex-end' : 'flex-start', alignItems: 'flex-start' }}>
+            {m.from === 'ai' && (
+              <div style={{
+                width: 34, height: 34, borderRadius: 10, flexShrink: 0,
+                background: 'linear-gradient(135deg, rgba(53,211,154,0.2), rgba(47,155,255,0.2))',
+                border: '1px solid rgba(53,211,154,0.25)',
+                display: 'flex', alignItems: 'center', justifyContent: 'center',
+              }}>
+                <Bot size={16} color={C.teal} />
+              </div>
+            )}
+            <div style={{
+              maxWidth: '72%',
+              background: m.from === 'user' ? C.amber : C.panel,
+              border: m.from === 'ai' ? `1px solid ${C.border}` : 'none',
+              borderRadius: m.from === 'user' ? '12px 12px 4px 12px' : '4px 12px 12px 12px',
+              padding: '12px 16px',
+              color: m.from === 'user' ? '#071A2F' : C.text,
+              fontSize: 13, lineHeight: 1.65,
+              whiteSpace: 'pre-line',
+            }}>
+              {m.text.replace(/\*\*(.*?)\*\*/g, '$1')}
+              <p style={{ fontSize: 10, color: m.from === 'user' ? 'rgba(7,26,47,0.5)' : C.muted, margin: '6px 0 0', textAlign: 'right' }}>
+                {m.hora}
+              </p>
+            </div>
+            {m.from === 'user' && (
+              <div style={{
+                width: 34, height: 34, borderRadius: 10, flexShrink: 0,
+                background: `linear-gradient(135deg, ${C.highlight}, ${C.teal})`,
+                display: 'flex', alignItems: 'center', justifyContent: 'center',
+                fontFamily: 'Space Grotesk', fontWeight: 700, fontSize: 13, color: '#071A2F'
+              }}>JC</div>
+            )}
+          </div>
+        ))}
+
+        {loading && (
+          <div style={{ display: 'flex', gap: 12, alignItems: 'flex-start' }}>
+            <div style={{
+              width: 34, height: 34, borderRadius: 10, flexShrink: 0,
+              background: 'linear-gradient(135deg, rgba(53,211,154,0.2), rgba(47,155,255,0.2))',
+              border: '1px solid rgba(53,211,154,0.25)',
+              display: 'flex', alignItems: 'center', justifyContent: 'center',
+            }}>
+              <Bot size={16} color={C.teal} />
+            </div>
+            <div style={{
+              background: C.panel, border: `1px solid ${C.border}`,
+              borderRadius: '4px 12px 12px 12px', padding: '14px 18px',
+              display: 'flex', gap: 6, alignItems: 'center'
+            }}>
+              {[0, 1, 2].map(j => (
+                <span key={j} style={{
+                  width: 7, height: 7, borderRadius: '50%', background: C.teal,
+                  display: 'inline-block',
+                  animation: `ia-pulse 1.2s ease-in-out ${j * 0.2}s infinite`,
+                }} />
+              ))}
+            </div>
+          </div>
+        )}
+        <div ref={bottomRef} />
+      </div>
+
+      {/* Input */}
+      <div style={{
+        padding: isMobile ? '12px 16px' : '16px 32px', borderTop: `1px solid ${C.border}`,
+        background: C.panel,
+      }}>
+        <div style={{ display: 'flex', gap: 10, alignItems: 'flex-end' }}>
+          <div style={{ flex: 1, position: 'relative' }}>
+            <Lightbulb size={15} style={{ position: 'absolute', left: 12, top: '50%', transform: 'translateY(-50%)', color: C.muted }} />
+            <input
+              placeholder="Pergunte sobre vendas, estoque, finanças ou clientes..."
+              value={input}
+              onChange={e => setInput(e.target.value)}
+              onKeyDown={e => { if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); sendMessage(input) } }}
+              disabled={loading}
+              style={{
+                width: '100%', background: C.raised, border: `1px solid ${C.borderMed}`,
+                borderRadius: 10, padding: '11px 14px 11px 36px', color: C.text,
+                fontSize: 13, outline: 'none', fontFamily: 'Inter',
+                opacity: loading ? 0.6 : 1,
+              }}
+            />
+          </div>
+          <button
+            onClick={() => sendMessage(input)}
+            disabled={loading || !input.trim()}
+            style={{
+              width: 42, height: 42, borderRadius: 10, flexShrink: 0,
+              background: input.trim() && !loading ? C.teal : C.raised,
+              border: `1px solid ${input.trim() && !loading ? C.teal : C.border}`,
+              cursor: input.trim() && !loading ? 'pointer' : 'not-allowed',
+              display: 'flex', alignItems: 'center', justifyContent: 'center',
+              transition: 'background 0.15s',
+            }}
+          >
+            <Send size={16} color={input.trim() && !loading ? '#071A2F' : C.muted} />
+          </button>
+        </div>
+        <p style={{ fontSize: 11, color: C.muted, margin: '8px 0 0', textAlign: 'center' }}>
+          IA treinada com os dados do seu negócio · Respostas geradas automaticamente
+        </p>
+      </div>
+
+      <style>{`
+        @keyframes ia-pulse {
+          0%, 60%, 100% { transform: scale(1); opacity: 0.4; }
+          30% { transform: scale(1.3); opacity: 1; }
+        }
+      `}</style>
+    </div>
+  )
+}
+
 // ─── APP ROOT ────────────────────────────────────────────────────────────────
 export default function App() {
   const [screen, setScreen] = useState<Screen>('landing')
@@ -1645,6 +1895,7 @@ export default function App() {
     clientes: <ClientesScreen />,
     relatorios: <RelatoriosScreen />,
     atendimento: <AtendimentoScreen />,
+    'ia-assistente': <IAAssistenteScreen />,
     configuracoes: <ConfiguracoesScreen />,
   }
 
