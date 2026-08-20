@@ -1,5 +1,6 @@
 import LandingPage from './LandingPage'
-import { useState, useRef, useEffect } from 'react'
+import { useState } from 'react'
+import { useIsMobile } from './useIsMobile'
 import {
   LayoutDashboard, ShoppingCart, Package, DollarSign, Users, BarChart2,
   Settings, HelpCircle, Search, Bell, Plus, ArrowUpRight, ArrowDownRight,
@@ -279,6 +280,40 @@ const navItems = [
   { id: 'configuracoes', label: 'Configurações', icon: Settings },
 ]
 
+function BottomNav({ screen, setScreen }: { screen: Screen; setScreen: (s: Screen) => void }) {
+  const items = [
+    { id: 'dashboard', label: 'Início', icon: LayoutDashboard },
+    { id: 'vendas', label: 'Vendas', icon: ShoppingCart },
+    { id: 'estoque', label: 'Estoque', icon: Package },
+    { id: 'financeiro', label: 'Financeiro', icon: DollarSign },
+    { id: 'configuracoes', label: 'Config', icon: Settings },
+  ]
+  return (
+    <nav style={{
+      position: 'fixed', bottom: 0, left: 0, right: 0, zIndex: 50,
+      background: C.panel, borderTop: `1px solid ${C.border}`,
+      display: 'flex', height: 60,
+    }}>
+      {items.map(({ id, label, icon: Icon }) => {
+        const active = screen === id || (id === 'dashboard' && !items.find(i => i.id === screen))
+        return (
+          <button key={id} onClick={() => setScreen(id as Screen)} style={{
+            flex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center',
+            justifyContent: 'center', gap: 3, background: 'none',
+            borderTop: `2px solid ${active ? C.amber : 'transparent'}`,
+            borderLeft: 'none', borderRight: 'none', borderBottom: 'none',
+            color: active ? C.amber : C.muted, cursor: 'pointer',
+            fontFamily: 'Inter', fontSize: 10, fontWeight: active ? 600 : 400,
+          }}>
+            <Icon size={18} />
+            {label}
+          </button>
+        )
+      })}
+    </nav>
+  )
+}
+
 function Sidebar({ screen, setScreen, collapsed, setCollapsed }: {
   screen: Screen
   setScreen: (s: Screen) => void
@@ -395,18 +430,19 @@ function Sidebar({ screen, setScreen, collapsed, setCollapsed }: {
 function Header({ title, subtitle, actions }: {
   title: string; subtitle?: string; actions?: React.ReactNode
 }) {
+  const isMobile = useIsMobile()
   return (
     <div style={{
-      padding: '24px 32px', borderBottom: `1px solid ${C.border}`,
+      padding: isMobile ? '16px 20px' : '24px 32px', borderBottom: `1px solid ${C.border}`,
       display: 'flex', alignItems: 'center', justifyContent: 'space-between',
-      gap: 16, background: C.panel, position: 'sticky', top: 0, zIndex: 10,
+      gap: 12, background: C.panel, position: 'sticky', top: 0, zIndex: 10,
     }}>
-      <div>
-        <h1 style={{ fontFamily: 'Space Grotesk', fontSize: 22, fontWeight: 700, margin: 0, color: C.text }}>{title}</h1>
-        {subtitle && <p style={{ margin: '2px 0 0', fontSize: 14, color: C.muted }}>{subtitle}</p>}
+      <div style={{ flex: 1, minWidth: 0 }}>
+        <h1 style={{ fontFamily: 'Space Grotesk', fontSize: isMobile ? 18 : 22, fontWeight: 700, margin: 0, color: C.text, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{title}</h1>
+        {subtitle && !isMobile && <p style={{ margin: '2px 0 0', fontSize: 14, color: C.muted }}>{subtitle}</p>}
       </div>
-      <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
-        {actions}
+      <div style={{ display: 'flex', alignItems: 'center', gap: isMobile ? 8 : 12, flexShrink: 0 }}>
+        {!isMobile && actions}
         <button style={{
           background: C.raised, border: `1px solid ${C.border}`, borderRadius: 8,
           padding: '8px', cursor: 'pointer', color: C.muted, display: 'flex', position: 'relative'
@@ -572,10 +608,12 @@ function LoginScreen({ onLogin }: { onLogin: () => void }) {
 // DASHBOARD
 function DashboardScreen({ setScreen }: { setScreen: (s: Screen) => void }) {
   const [salesFilter, setSalesFilter] = useState('7d')
+  const isMobile = useIsMobile()
   const chartData = salesFilter === '7d' ? salesData7d : salesData30d
+  const pad = isMobile ? '16px 16px' : '28px 32px'
 
   return (
-    <div style={{ flex: 1, overflowY: 'auto', background: C.bg }}>
+    <div style={{ flex: 1, overflowY: 'auto', background: C.bg, paddingBottom: isMobile ? 64 : 0 }}>
       <Header
         title="Bom dia, João 👋"
         subtitle="Aqui está o resumo do seu negócio hoje."
@@ -591,9 +629,9 @@ function DashboardScreen({ setScreen }: { setScreen: (s: Screen) => void }) {
         }
       />
 
-      <div style={{ padding: '28px 32px', display: 'flex', flexDirection: 'column', gap: 24 }}>
+      <div style={{ padding: pad, display: 'flex', flexDirection: 'column', gap: isMobile ? 14 : 24 }}>
         {/* Metric cards */}
-        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: 16 }}>
+        <div style={{ display: 'grid', gridTemplateColumns: isMobile ? '1fr 1fr' : 'repeat(4, 1fr)', gap: isMobile ? 10 : 16 }}>
           <MetricCard
             icon={ShoppingCart} label="Vendas hoje" value="R$ 2.840" sub="vs. ontem"
             trend={12.5} color={C.amber} sparkData={[1820, 2340, 1960, 2780, 3120, 2540, 2840]}
@@ -613,7 +651,7 @@ function DashboardScreen({ setScreen }: { setScreen: (s: Screen) => void }) {
         </div>
 
         {/* Sales chart + stock alerts */}
-        <div style={{ display: 'grid', gridTemplateColumns: '2fr 1fr', gap: 16 }}>
+        <div style={{ display: 'grid', gridTemplateColumns: isMobile ? '1fr' : '2fr 1fr', gap: 14 }}>
           {/* Sales chart */}
           <Card style={{ padding: '22px 24px' }}>
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 20 }}>
@@ -740,16 +778,18 @@ function DashboardScreen({ setScreen }: { setScreen: (s: Screen) => void }) {
 // VENDAS
 function VendasScreen({ setScreen }: { setScreen: (s: Screen) => void }) {
   const [filter, setFilter] = useState('todos')
+  const isMobile = useIsMobile()
+  const pad = isMobile ? '16px 16px' : '28px 32px'
 
   return (
-    <div style={{ flex: 1, overflowY: 'auto', background: C.bg }}>
+    <div style={{ flex: 1, overflowY: 'auto', background: C.bg, paddingBottom: isMobile ? 64 : 0 }}>
       <Header
         title="Vendas"
         subtitle="Gerencie seus pedidos e faturamento"
         actions={<Btn variant="primary" onClick={() => setScreen('nova-venda')}><Plus size={15} /> Nova venda</Btn>}
       />
-      <div style={{ padding: '28px 32px', display: 'flex', flexDirection: 'column', gap: 24 }}>
-        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: 16 }}>
+      <div style={{ padding: pad, display: 'flex', flexDirection: 'column', gap: isMobile ? 14 : 24 }}>
+        <div style={{ display: 'grid', gridTemplateColumns: isMobile ? '1fr 1fr' : 'repeat(4, 1fr)', gap: isMobile ? 10 : 16 }}>
           <MetricCard icon={ShoppingCart} label="Vendas hoje" value="R$ 2.840" sub="+12,5% vs. ontem" trend={12.5} color={C.amber} sparkData={[1820, 2340, 1960, 2780, 3120, 2540, 2840]} />
           <MetricCard icon={TrendingUp} label="Ticket médio" value="R$ 74,73" sub="esta semana" trend={1.8} color={C.teal} sparkData={[72, 75, 74, 76, 75, 77, 74]} />
           <MetricCard icon={Package} label="Pedidos" value="38" sub="+8 hoje" trend={8.3} color={C.amber} sparkData={[24, 31, 26, 37, 41, 33, 38]} />
@@ -808,6 +848,7 @@ function VendasScreen({ setScreen }: { setScreen: (s: Screen) => void }) {
 
 // NOVA VENDA
 function NovaVendaScreen({ setScreen }: { setScreen: (s: Screen) => void }) {
+  const isMobile = useIsMobile()
   const [search, setSearch] = useState('')
   const [cart, setCart] = useState<{ id: number; nome: string; preco: number; qty: number }[]>([])
   const [payment, setPayment] = useState<'pix' | 'dinheiro' | 'cartao'>('pix')
@@ -858,9 +899,9 @@ function NovaVendaScreen({ setScreen }: { setScreen: (s: Screen) => void }) {
   }
 
   return (
-    <div style={{ flex: 1, overflowY: 'auto', background: C.bg }}>
+    <div style={{ flex: 1, overflowY: 'auto', background: C.bg, paddingBottom: isMobile ? 64 : 0 }}>
       <Header title="Nova venda" subtitle="Adicione produtos e finalize o pedido" />
-      <div style={{ padding: '28px 32px', display: 'grid', gridTemplateColumns: '1fr 360px', gap: 24 }}>
+      <div style={{ padding: isMobile ? '16px' : '28px 32px', display: 'grid', gridTemplateColumns: isMobile ? '1fr' : '1fr 360px', gap: isMobile ? 14 : 24 }}>
         {/* Product search */}
         <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
           <Card style={{ padding: '20px 22px' }}>
@@ -1009,6 +1050,7 @@ function NovaVendaScreen({ setScreen }: { setScreen: (s: Screen) => void }) {
 
 // ESTOQUE
 function EstoqueScreen({ setScreen }: { setScreen: (s: Screen) => void }) {
+  const isMobile = useIsMobile()
   const [search, setSearch] = useState('')
   const [catFilter, setCatFilter] = useState('Todos')
   const cats = ['Todos', ...Array.from(new Set(products.map(p => p.categoria)))]
@@ -1018,14 +1060,14 @@ function EstoqueScreen({ setScreen }: { setScreen: (s: Screen) => void }) {
   )
 
   return (
-    <div style={{ flex: 1, overflowY: 'auto', background: C.bg }}>
+    <div style={{ flex: 1, overflowY: 'auto', background: C.bg, paddingBottom: isMobile ? 64 : 0 }}>
       <Header
         title="Estoque"
         subtitle="Gerencie seus produtos e reposições"
-        actions={<Btn variant="primary" onClick={() => setScreen('add-produto')}><Plus size={15} /> Adicionar produto</Btn>}
+        actions={<Btn variant="primary" onClick={() => setScreen('add-produto')}><Plus size={15} />{isMobile ? '' : ' Adicionar'}</Btn>}
       />
-      <div style={{ padding: '28px 32px', display: 'flex', flexDirection: 'column', gap: 20 }}>
-        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: 12 }}>
+      <div style={{ padding: isMobile ? '16px' : '28px 32px', display: 'flex', flexDirection: 'column', gap: isMobile ? 12 : 20 }}>
+        <div style={{ display: 'grid', gridTemplateColumns: isMobile ? '1fr 1fr' : 'repeat(4, 1fr)', gap: isMobile ? 8 : 12 }}>
           {[
             { label: 'Total', value: products.length, color: C.teal },
             { label: 'Em estoque', value: products.filter(p => p.status === 'ok').length, color: C.teal },
@@ -1095,6 +1137,7 @@ function EstoqueScreen({ setScreen }: { setScreen: (s: Screen) => void }) {
 
 // ADD PRODUTO
 function AddProdutoScreen({ setScreen }: { setScreen: (s: Screen) => void }) {
+  const isMobile = useIsMobile()
   const [form, setForm] = useState({ nome: '', categoria: '', preco: '', estoque: '', minimo: '' })
   const [saved, setSaved] = useState(false)
 
@@ -1104,9 +1147,9 @@ function AddProdutoScreen({ setScreen }: { setScreen: (s: Screen) => void }) {
   }
 
   return (
-    <div style={{ flex: 1, overflowY: 'auto', background: C.bg }}>
+    <div style={{ flex: 1, overflowY: 'auto', background: C.bg, paddingBottom: isMobile ? 64 : 0 }}>
       <Header title="Adicionar produto" subtitle="Preencha os dados do novo produto" />
-      <div style={{ padding: '28px 32px', maxWidth: 600 }}>
+      <div style={{ padding: isMobile ? '16px' : '28px 32px', maxWidth: 600 }}>
         {saved ? (
           <div style={{ display: 'flex', alignItems: 'center', gap: 12, padding: '16px 20px', background: 'rgba(53,211,154,0.12)', border: `1px solid rgba(53,211,154,0.3)`, borderRadius: 10 }}>
             <CheckCircle size={20} color={C.teal} />
@@ -1145,11 +1188,13 @@ function AddProdutoScreen({ setScreen }: { setScreen: (s: Screen) => void }) {
 
 // FINANCEIRO
 function FinanceiroScreen() {
+  const isMobile = useIsMobile()
+  const pad = isMobile ? '16px' : '28px 32px'
   return (
-    <div style={{ flex: 1, overflowY: 'auto', background: C.bg }}>
+    <div style={{ flex: 1, overflowY: 'auto', background: C.bg, paddingBottom: isMobile ? 64 : 0 }}>
       <Header title="Financeiro" subtitle="Controle suas entradas, saídas e fluxo de caixa" />
-      <div style={{ padding: '28px 32px', display: 'flex', flexDirection: 'column', gap: 24 }}>
-        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: 16 }}>
+      <div style={{ padding: pad, display: 'flex', flexDirection: 'column', gap: isMobile ? 12 : 24 }}>
+        <div style={{ display: 'grid', gridTemplateColumns: isMobile ? '1fr 1fr' : 'repeat(4, 1fr)', gap: isMobile ? 10 : 16 }}>
           <MetricCard icon={ArrowUpRight} label="Entradas" value="R$ 21.200" sub="este mês" trend={14.2} color={C.teal} sparkData={[12400, 15600, 13200, 18400, 16800, 21200, 21200]} />
           <MetricCard icon={ArrowDownRight} label="Saídas" value="R$ 12.800" sub="este mês" trend={-4.3} color={C.red} sparkData={[8200, 9800, 8600, 11200, 10400, 12800, 12800]} />
           <MetricCard icon={TrendingUp} label="Lucro" value="R$ 8.400" sub="este mês" trend={22.4} color={C.amber} sparkData={[4200, 5800, 4600, 7200, 6400, 8400, 8400]} />
@@ -1212,13 +1257,15 @@ function FinanceiroScreen() {
 
 // CLIENTES
 function ClientesScreen() {
+  const isMobile = useIsMobile()
+  const pad = isMobile ? '16px' : '28px 32px'
   return (
-    <div style={{ flex: 1, overflowY: 'auto', background: C.bg }}>
+    <div style={{ flex: 1, overflowY: 'auto', background: C.bg, paddingBottom: isMobile ? 64 : 0 }}>
       <Header title="Clientes" subtitle="Gerencie e conheça seus clientes" actions={
-        <Btn variant="primary"><Plus size={15} /> Novo cliente</Btn>
+        <Btn variant="primary"><Plus size={15} />{!isMobile && ' Novo cliente'}</Btn>
       } />
-      <div style={{ padding: '28px 32px', display: 'flex', flexDirection: 'column', gap: 24 }}>
-        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: 16 }}>
+      <div style={{ padding: pad, display: 'flex', flexDirection: 'column', gap: isMobile ? 12 : 24 }}>
+        <div style={{ display: 'grid', gridTemplateColumns: isMobile ? '1fr 1fr' : 'repeat(4, 1fr)', gap: isMobile ? 10 : 16 }}>
           <MetricCard icon={Users} label="Total de clientes" value="284" sub="cadastrados" trend={8.2} color={C.teal} sparkData={[240, 248, 255, 260, 268, 276, 284]} />
           <MetricCard icon={Plus} label="Novos clientes" value="18" sub="este mês" trend={12.5} color={C.amber} sparkData={[10, 12, 14, 13, 16, 17, 18]} />
           <MetricCard icon={Star} label="Recorrentes" value="67" sub="voltaram este mês" trend={5.0} color={C.amber} sparkData={[55, 58, 60, 62, 64, 66, 67]} />
@@ -1271,17 +1318,21 @@ function ClientesScreen() {
 // RELATORIOS
 function RelatoriosScreen() {
   const [cat, setCat] = useState('Vendas')
+  const isMobile = useIsMobile()
+  const pad = isMobile ? '16px' : '28px 32px'
 
   return (
-    <div style={{ flex: 1, overflowY: 'auto', background: C.bg }}>
+    <div style={{ flex: 1, overflowY: 'auto', background: C.bg, paddingBottom: isMobile ? 64 : 0 }}>
       <Header title="Relatórios" subtitle="Análise completa do seu negócio" actions={
-        <div style={{ display: 'flex', gap: 8 }}>
-          <Btn variant="ghost" size="sm"><Download size={13} /> PDF</Btn>
-          <Btn variant="ghost" size="sm"><Download size={13} /> Excel</Btn>
-        </div>
+        !isMobile ? (
+          <div style={{ display: 'flex', gap: 8 }}>
+            <Btn variant="ghost" size="sm"><Download size={13} /> PDF</Btn>
+            <Btn variant="ghost" size="sm"><Download size={13} /> Excel</Btn>
+          </div>
+        ) : undefined
       } />
-      <div style={{ padding: '28px 32px', display: 'flex', flexDirection: 'column', gap: 24 }}>
-        <div style={{ display: 'flex', gap: 8 }}>
+      <div style={{ padding: pad, display: 'flex', flexDirection: 'column', gap: isMobile ? 12 : 24 }}>
+        <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
           {['Vendas', 'Estoque', 'Financeiro', 'Clientes'].map(c => (
             <button key={c} onClick={() => setCat(c)} style={{
               background: cat === c ? C.amber : C.panel,
@@ -1293,7 +1344,7 @@ function RelatoriosScreen() {
           ))}
         </div>
 
-        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 16 }}>
+        <div style={{ display: 'grid', gridTemplateColumns: isMobile ? '1fr 1fr' : 'repeat(3, 1fr)', gap: isMobile ? 10 : 16 }}>
           {cat === 'Vendas' && <>
             <MetricCard icon={ShoppingCart} label="Total vendido" value="R$ 84.200" sub="últimos 30 dias" trend={14.2} color={C.amber} sparkData={[60000, 65000, 70000, 72000, 76000, 80000, 84200]} />
             <MetricCard icon={TrendingUp} label="Ticket médio" value="R$ 74,73" sub="últimos 30 dias" trend={3.1} color={C.teal} sparkData={[68, 70, 71, 72, 73, 74, 74.73]} />
@@ -1574,7 +1625,7 @@ function ConfiguracoesScreen() {
 export default function App() {
   const [screen, setScreen] = useState<Screen>('landing')
   const [collapsed, setCollapsed] = useState(false)
-  const [mobileMenuOpen, setMobileMenuOpen] = useState(false)
+  const isMobile = useIsMobile()
 
   if (screen === 'landing') {
     return <LandingPage onEnter={() => setScreen('login')} />
@@ -1599,24 +1650,20 @@ export default function App() {
 
   return (
     <div style={{ display: 'flex', height: '100vh', overflow: 'hidden', background: C.bg }}>
-      {/* Mobile overlay */}
-      {mobileMenuOpen && (
-        <div
-          onClick={() => setMobileMenuOpen(false)}
-          style={{ position: 'fixed', inset: 0, background: 'rgba(10,17,32,0.7)', zIndex: 40 }}
-        />
+      {/* Sidebar — desktop only */}
+      {!isMobile && (
+        <div style={{ display: 'flex', flexShrink: 0 }}>
+          <Sidebar screen={screen} setScreen={setScreen} collapsed={collapsed} setCollapsed={setCollapsed} />
+        </div>
       )}
-
-      {/* Sidebar */}
-      <div style={{ display: 'flex', flexShrink: 0, zIndex: 50 }}>
-        <Sidebar screen={screen} setScreen={(s) => { setScreen(s); setMobileMenuOpen(false) }}
-          collapsed={collapsed} setCollapsed={setCollapsed} />
-      </div>
 
       {/* Main content */}
       <main style={{ flex: 1, display: 'flex', flexDirection: 'column', overflow: 'hidden' }}>
         {screenMap[screen] ?? screenMap['dashboard']}
       </main>
+
+      {/* Bottom nav — mobile only */}
+      {isMobile && <BottomNav screen={screen} setScreen={setScreen} />}
     </div>
   )
 }

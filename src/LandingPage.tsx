@@ -1,4 +1,5 @@
-import { useState, useEffect, useRef } from 'react'
+import { useState, useEffect } from 'react'
+import { useIsMobile } from './useIsMobile'
 import {
   Zap, BarChart2, Package, DollarSign, Users, ChevronRight,
   ArrowRight, TrendingUp, ArrowUpRight, AlertTriangle, CheckCircle,
@@ -221,6 +222,7 @@ function FloatingCard({ children, style }: { children: React.ReactNode; style: R
 function Navbar({ onCTA }: { onCTA: () => void }) {
   const [scrolled, setScrolled] = useState(false)
   const [menuOpen, setMenuOpen] = useState(false)
+  const isMobile = useIsMobile()
 
   useEffect(() => {
     const handler = () => setScrolled(window.scrollY > 20)
@@ -228,205 +230,260 @@ function Navbar({ onCTA }: { onCTA: () => void }) {
     return () => window.removeEventListener('scroll', handler)
   }, [])
 
+  const navLinks = [
+    { label: 'O projeto', id: 'o-projeto' },
+    { label: 'Problema', id: 'problema' },
+    { label: 'Solução', id: 'solucao' },
+    { label: 'Funcionalidades', id: 'funcionalidades' },
+    { label: 'Para quem é', id: 'para-quem' },
+  ]
+
   const scrollTo = (id: string) => {
     document.getElementById(id)?.scrollIntoView({ behavior: 'smooth' })
     setMenuOpen(false)
   }
 
   return (
-    <nav style={{
-      position: 'fixed', top: 0, left: 0, right: 0, zIndex: 100,
-      padding: '0 40px',
-      background: scrolled ? `rgba(7,26,47,0.95)` : 'transparent',
-      backdropFilter: scrolled ? 'blur(12px)' : 'none',
-      borderBottom: scrolled ? `1px solid ${B.border}` : 'none',
-      transition: 'all 0.3s',
-    }}>
-      <div style={{
-        maxWidth: 1200, margin: '0 auto', height: 64,
-        display: 'flex', alignItems: 'center', justifyContent: 'space-between',
+    <>
+      <nav style={{
+        position: 'fixed', top: 0, left: 0, right: 0, zIndex: 100,
+        padding: isMobile ? '0 20px' : '0 40px',
+        background: scrolled || menuOpen ? `rgba(7,26,47,0.97)` : 'transparent',
+        backdropFilter: scrolled || menuOpen ? 'blur(12px)' : 'none',
+        borderBottom: scrolled ? `1px solid ${B.border}` : 'none',
+        transition: 'all 0.3s',
       }}>
-        {/* Logo */}
-        <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
-          <div style={{
-            width: 32, height: 32, borderRadius: 9, background: B.blue,
-            display: 'flex', alignItems: 'center', justifyContent: 'center',
-          }}>
-            <Zap size={17} color="#fff" />
-          </div>
-          <div>
-            <span style={{ fontFamily: 'Space Grotesk, sans-serif', fontSize: 18, fontWeight: 700, color: B.white }}>
-              Controlai
-            </span>
-            <span style={{ display: 'block', fontSize: 9, color: B.muted, lineHeight: 1, marginTop: 1, fontFamily: 'Inter' }}>
-              Gestão sem complicação
-            </span>
-          </div>
-        </div>
-
-        {/* Menu (desktop) */}
-        <div style={{ display: 'flex', gap: 32, alignItems: 'center' }}>
-          {[
-            { label: 'O projeto', id: 'o-projeto' },
-            { label: 'Problema', id: 'problema' },
-            { label: 'Solução', id: 'solucao' },
-            { label: 'Funcionalidades', id: 'funcionalidades' },
-            { label: 'Para quem é', id: 'para-quem' },
-          ].map(item => (
-            <button key={item.id} onClick={() => scrollTo(item.id)} style={{
-              background: 'none', border: 'none', cursor: 'pointer',
-              fontSize: 13, color: B.muted, fontFamily: 'Inter',
-              padding: 0,
-            }}>{item.label}</button>
-          ))}
-        </div>
-
-        <button onClick={onCTA} style={{
-          background: B.blue, color: '#fff', border: 'none', borderRadius: 8,
-          padding: '9px 20px', fontSize: 13, fontWeight: 600, cursor: 'pointer',
-          fontFamily: 'Inter', display: 'flex', alignItems: 'center', gap: 6,
+        <div style={{
+          maxWidth: 1200, margin: '0 auto', height: 64,
+          display: 'flex', alignItems: 'center', justifyContent: 'space-between',
         }}>
-          Conheça a plataforma <ArrowRight size={14} />
-        </button>
-      </div>
-    </nav>
+          {/* Logo */}
+          <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+            <div style={{ width: 32, height: 32, borderRadius: 9, background: B.blue, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+              <Zap size={17} color="#fff" />
+            </div>
+            <div>
+              <span style={{ fontFamily: 'Space Grotesk, sans-serif', fontSize: 18, fontWeight: 700, color: B.white }}>Controlai</span>
+              {!isMobile && <span style={{ display: 'block', fontSize: 9, color: B.muted, lineHeight: 1, marginTop: 1, fontFamily: 'Inter' }}>Gestão sem complicação</span>}
+            </div>
+          </div>
+
+          {/* Desktop menu */}
+          {!isMobile && (
+            <div style={{ display: 'flex', gap: 32, alignItems: 'center' }}>
+              {navLinks.map(item => (
+                <button key={item.id} onClick={() => scrollTo(item.id)} style={{
+                  background: 'none', border: 'none', cursor: 'pointer',
+                  fontSize: 13, color: B.muted, fontFamily: 'Inter', padding: 0,
+                }}>{item.label}</button>
+              ))}
+            </div>
+          )}
+
+          {/* Desktop CTA / Mobile hamburger */}
+          {isMobile ? (
+            <button onClick={() => setMenuOpen(o => !o)} style={{
+              background: 'none', border: 'none', cursor: 'pointer', color: B.white,
+              display: 'flex', padding: 4,
+            }}>
+              {menuOpen ? <X size={22} /> : <Menu size={22} />}
+            </button>
+          ) : (
+            <button onClick={onCTA} style={{
+              background: B.blue, color: '#fff', border: 'none', borderRadius: 8,
+              padding: '9px 20px', fontSize: 13, fontWeight: 600, cursor: 'pointer',
+              fontFamily: 'Inter', display: 'flex', alignItems: 'center', gap: 6,
+            }}>
+              Conheça a plataforma <ArrowRight size={14} />
+            </button>
+          )}
+        </div>
+
+        {/* Mobile dropdown */}
+        {isMobile && menuOpen && (
+          <div style={{ padding: '12px 0 20px', display: 'flex', flexDirection: 'column', gap: 4 }}>
+            {navLinks.map(item => (
+              <button key={item.id} onClick={() => scrollTo(item.id)} style={{
+                background: 'none', border: 'none', cursor: 'pointer', textAlign: 'left',
+                fontSize: 15, color: B.white, fontFamily: 'Inter', padding: '10px 4px',
+                borderBottom: `1px solid ${B.border}`,
+              }}>{item.label}</button>
+            ))}
+            <button onClick={() => { setMenuOpen(false); onCTA() }} style={{
+              marginTop: 12, background: B.blue, color: '#fff', border: 'none', borderRadius: 8,
+              padding: '12px', fontSize: 14, fontWeight: 600, cursor: 'pointer', fontFamily: 'Inter',
+            }}>
+              Conheça a plataforma
+            </button>
+          </div>
+        )}
+      </nav>
+    </>
   )
 }
 
 // ─── SECTIONS ─────────────────────────────────────────────────────────────────
 
 function HeroSection({ onCTA }: { onCTA: () => void }) {
+  const isMobile = useIsMobile()
   return (
     <section style={{
       minHeight: '100vh', display: 'flex', alignItems: 'center',
-      padding: '100px 40px 80px', position: 'relative', overflow: 'hidden',
+      padding: isMobile ? '100px 20px 60px' : '100px 40px 80px',
+      position: 'relative', overflow: 'hidden',
       background: `linear-gradient(160deg, #071A2F 0%, #0A223D 60%, #071A2F 100%)`,
     }}>
       <GlowDot x="10%" y="30%" size={500} opacity={0.06} />
       <GlowDot x="80%" y="60%" size={400} opacity={0.07} />
-      <GlowDot x="50%" y="10%" size={300} opacity={0.04} />
 
-      <div style={{ maxWidth: 1200, margin: '0 auto', width: '100%', display: 'grid', gridTemplateColumns: '1fr 1.1fr', gap: 64, alignItems: 'center' }}>
+      <div style={{
+        maxWidth: 1200, margin: '0 auto', width: '100%',
+        display: 'grid',
+        gridTemplateColumns: isMobile ? '1fr' : '1fr 1.1fr',
+        gap: isMobile ? 48 : 64, alignItems: 'center',
+      }}>
         {/* Left */}
         <div>
           <div style={{
             display: 'inline-flex', alignItems: 'center', gap: 8, padding: '6px 14px',
             borderRadius: 100, background: 'rgba(47,155,255,0.1)', border: `1px solid ${B.borderMed}`,
-            marginBottom: 28,
+            marginBottom: 24,
           }}>
             <span style={{ width: 6, height: 6, borderRadius: '50%', background: B.green, display: 'block' }} />
-            <span style={{ fontSize: 11, color: B.light, fontWeight: 600, letterSpacing: '0.08em', fontFamily: 'Inter' }}>
+            <span style={{ fontSize: isMobile ? 9 : 11, color: B.light, fontWeight: 600, letterSpacing: '0.06em', fontFamily: 'Inter' }}>
               PLATAFORMA DE GESTÃO PARA PEQUENOS NEGÓCIOS
             </span>
           </div>
 
           <h1 style={{
-            fontFamily: 'Space Grotesk, sans-serif', fontSize: 62, fontWeight: 700,
-            lineHeight: 1.05, margin: '0 0 24px', color: B.white,
+            fontFamily: 'Space Grotesk, sans-serif',
+            fontSize: isMobile ? 40 : 62,
+            fontWeight: 700, lineHeight: 1.05, margin: '0 0 20px', color: B.white,
           }}>
             Do caos ao{' '}
-            <span style={{
-              color: B.highlight,
-              textShadow: `0 0 40px rgba(47,155,255,0.5)`,
-            }}>
+            <span style={{ color: B.highlight, textShadow: `0 0 40px rgba(47,155,255,0.5)` }}>
               controle.
             </span>
           </h1>
 
-          <p style={{ fontSize: 17, color: B.muted, lineHeight: 1.65, margin: '0 0 12px', fontFamily: 'Inter', maxWidth: 480 }}>
+          <p style={{ fontSize: isMobile ? 15 : 17, color: B.muted, lineHeight: 1.65, margin: '0 0 10px', fontFamily: 'Inter' }}>
             O Controlai reúne estoque, vendas e finanças em um único lugar para ajudar pequenos negócios a trabalharem com mais organização e clareza.
           </p>
-          <p style={{ fontSize: 14, color: B.muted, opacity: 0.7, margin: '0 0 36px', fontFamily: 'Inter' }}>
+          <p style={{ fontSize: 13, color: B.muted, opacity: 0.7, margin: '0 0 32px', fontFamily: 'Inter' }}>
             Chega de depender de cadernos, planilhas e mensagens espalhadas.
           </p>
 
-          <div style={{ display: 'flex', gap: 12 }}>
+          <div style={{ display: 'flex', gap: 12, flexWrap: 'wrap' }}>
             <button onClick={onCTA} style={{
               background: B.blue, color: '#fff', border: 'none', borderRadius: 10,
-              padding: '13px 26px', fontSize: 15, fontWeight: 600, cursor: 'pointer',
-              fontFamily: 'Inter', display: 'flex', alignItems: 'center', gap: 8,
+              padding: isMobile ? '12px 22px' : '13px 26px', fontSize: 15, fontWeight: 600,
+              cursor: 'pointer', fontFamily: 'Inter', display: 'flex', alignItems: 'center', gap: 8,
               boxShadow: `0 0 30px rgba(22,119,210,0.4)`,
             }}>
               Conhecer o projeto <ArrowRight size={16} />
             </button>
             <button onClick={() => document.getElementById('como-funciona')?.scrollIntoView({ behavior: 'smooth' })} style={{
               background: 'rgba(47,155,255,0.08)', color: B.light, border: `1px solid ${B.borderMed}`,
-              borderRadius: 10, padding: '13px 26px', fontSize: 15, cursor: 'pointer', fontFamily: 'Inter',
+              borderRadius: 10, padding: isMobile ? '12px 22px' : '13px 26px', fontSize: 15,
+              cursor: 'pointer', fontFamily: 'Inter',
             }}>
               Como funciona
             </button>
           </div>
         </div>
 
-        {/* Right — mockup + floating cards */}
-        <div style={{ position: 'relative', display: 'flex', justifyContent: 'center' }}>
-          <DashboardMockup />
+        {/* Right — mockup + floating cards (hidden on mobile to keep it clean) */}
+        {!isMobile && (
+          <div style={{ position: 'relative', display: 'flex', justifyContent: 'center' }}>
+            <DashboardMockup />
+            <FloatingCard style={{ top: -20, left: -40 }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                <div style={{ width: 28, height: 28, borderRadius: 8, background: 'rgba(53,211,154,0.15)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                  <TrendingUp size={14} color={B.green} />
+                </div>
+                <div>
+                  <p style={{ fontSize: 10, color: B.muted, margin: 0 }}>Vendas</p>
+                  <p style={{ fontFamily: 'IBM Plex Mono', fontSize: 14, fontWeight: 700, color: B.green, margin: 0 }}>+12,5%</p>
+                </div>
+              </div>
+            </FloatingCard>
+            <FloatingCard style={{ top: 80, right: -50 }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                <div style={{ width: 28, height: 28, borderRadius: 8, background: 'rgba(240,106,106,0.15)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                  <AlertTriangle size={13} color={B.red} />
+                </div>
+                <div>
+                  <p style={{ fontSize: 10, color: B.muted, margin: 0 }}>Estoque</p>
+                  <p style={{ fontSize: 12, fontWeight: 600, color: B.red, margin: 0 }}>7 para repor</p>
+                </div>
+              </div>
+            </FloatingCard>
+            <FloatingCard style={{ bottom: 100, left: -50 }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                <div style={{ width: 28, height: 28, borderRadius: 8, background: 'rgba(47,155,255,0.15)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                  <DollarSign size={13} color={B.highlight} />
+                </div>
+                <div>
+                  <p style={{ fontSize: 10, color: B.muted, margin: 0 }}>Saldo em caixa</p>
+                  <p style={{ fontFamily: 'IBM Plex Mono', fontSize: 14, fontWeight: 700, color: B.white, margin: 0 }}>R$ 8.420</p>
+                </div>
+              </div>
+            </FloatingCard>
+            <FloatingCard style={{ bottom: 40, right: -40 }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                <div style={{ width: 28, height: 28, borderRadius: 8, background: 'rgba(47,155,255,0.15)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                  <CheckCircle size={13} color={B.highlight} />
+                </div>
+                <div>
+                  <p style={{ fontSize: 10, color: B.muted, margin: 0 }}>Pedidos hoje</p>
+                  <p style={{ fontFamily: 'IBM Plex Mono', fontSize: 14, fontWeight: 700, color: B.white, margin: 0 }}>38</p>
+                </div>
+              </div>
+            </FloatingCard>
+          </div>
+        )}
 
-          {/* Floating cards */}
-          <FloatingCard style={{ top: -20, left: -40 }}>
-            <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-              <div style={{ width: 28, height: 28, borderRadius: 8, background: 'rgba(53,211,154,0.15)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-                <TrendingUp size={14} color={B.green} />
+        {/* Mobile: compact metric pills instead of the full mockup */}
+        {isMobile && (
+          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 10 }}>
+            {[
+              { icon: TrendingUp, label: 'Vendas', value: '+12,5%', color: B.green },
+              { icon: DollarSign, label: 'Saldo', value: 'R$ 8.420', color: B.highlight },
+              { icon: CheckCircle, label: 'Pedidos hoje', value: '38', color: B.highlight },
+              { icon: AlertTriangle, label: 'Estoque', value: '7 alertas', color: B.red },
+            ].map(m => (
+              <div key={m.label} style={{
+                background: B.card, border: `1px solid ${B.border}`, borderRadius: 12,
+                padding: '14px 16px', display: 'flex', alignItems: 'center', gap: 10,
+              }}>
+                <div style={{ width: 32, height: 32, borderRadius: 8, background: `${m.color}18`, display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
+                  <m.icon size={15} color={m.color} />
+                </div>
+                <div>
+                  <p style={{ fontSize: 10, color: B.muted, margin: 0, fontFamily: 'Inter' }}>{m.label}</p>
+                  <p style={{ fontFamily: 'IBM Plex Mono', fontSize: 13, fontWeight: 700, color: m.color, margin: 0 }}>{m.value}</p>
+                </div>
               </div>
-              <div>
-                <p style={{ fontSize: 10, color: B.muted, margin: 0 }}>Vendas</p>
-                <p style={{ fontFamily: 'IBM Plex Mono', fontSize: 14, fontWeight: 700, color: B.green, margin: 0 }}>+12,5%</p>
-              </div>
-            </div>
-          </FloatingCard>
-
-          <FloatingCard style={{ top: 80, right: -50 }}>
-            <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-              <div style={{ width: 28, height: 28, borderRadius: 8, background: 'rgba(240,106,106,0.15)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-                <AlertTriangle size={13} color={B.red} />
-              </div>
-              <div>
-                <p style={{ fontSize: 10, color: B.muted, margin: 0 }}>Estoque</p>
-                <p style={{ fontSize: 12, fontWeight: 600, color: B.red, margin: 0 }}>7 para repor</p>
-              </div>
-            </div>
-          </FloatingCard>
-
-          <FloatingCard style={{ bottom: 100, left: -50 }}>
-            <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-              <div style={{ width: 28, height: 28, borderRadius: 8, background: 'rgba(47,155,255,0.15)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-                <DollarSign size={13} color={B.highlight} />
-              </div>
-              <div>
-                <p style={{ fontSize: 10, color: B.muted, margin: 0 }}>Saldo em caixa</p>
-                <p style={{ fontFamily: 'IBM Plex Mono', fontSize: 14, fontWeight: 700, color: B.white, margin: 0 }}>R$ 8.420</p>
-              </div>
-            </div>
-          </FloatingCard>
-
-          <FloatingCard style={{ bottom: 40, right: -40 }}>
-            <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-              <div style={{ width: 28, height: 28, borderRadius: 8, background: 'rgba(47,155,255,0.15)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-                <CheckCircle size={13} color={B.highlight} />
-              </div>
-              <div>
-                <p style={{ fontSize: 10, color: B.muted, margin: 0 }}>Pedidos hoje</p>
-                <p style={{ fontFamily: 'IBM Plex Mono', fontSize: 14, fontWeight: 700, color: B.white, margin: 0 }}>38</p>
-              </div>
-            </div>
-          </FloatingCard>
-        </div>
+            ))}
+          </div>
+        )}
       </div>
     </section>
   )
 }
 
 function WhatIsSection() {
+  const isMobile = useIsMobile()
   const chaos = ['📓 Caderno', '📊 Planilhas', '💬 WhatsApp', '📋 Papéis avulsos']
   const control = ['📦 Estoque', '💰 Vendas', '💳 Finanças', '👥 Clientes', '📈 Relatórios']
 
   return (
     <section id="o-projeto" style={{
-      padding: '100px 40px', background: B.bg,
+      padding: isMobile ? '64px 20px' : '100px 40px', background: B.bg,
       position: 'relative', overflow: 'hidden',
     }}>
       <GlowDot x="90%" y="50%" size={400} opacity={0.05} />
-      <div style={{ maxWidth: 1200, margin: '0 auto', display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 80, alignItems: 'center' }}>
+      <div style={{ maxWidth: 1200, margin: '0 auto', display: 'grid', gridTemplateColumns: isMobile ? '1fr' : '1fr 1fr', gap: isMobile ? 40 : 80, alignItems: 'center' }}>
         <div>
           <SectionLabel>O QUE É O CONTROLAI?</SectionLabel>
           <h2 style={{ fontFamily: 'Space Grotesk, sans-serif', fontSize: 40, fontWeight: 700, color: B.white, margin: '0 0 20px', lineHeight: 1.15 }}>
@@ -491,6 +548,7 @@ function WhatIsSection() {
 }
 
 function ProblemSection() {
+  const isMobile = useIsMobile()
   const problems = [
     {
       num: '01',
@@ -513,7 +571,7 @@ function ProblemSection() {
   ]
 
   return (
-    <section id="problema" style={{ padding: '100px 40px', background: B.bg2, position: 'relative', overflow: 'hidden' }}>
+    <section id="problema" style={{ padding: isMobile ? '64px 20px' : '100px 40px', background: B.bg2, position: 'relative', overflow: 'hidden' }}>
       <GlowDot x="20%" y="80%" size={350} opacity={0.05} />
       <div style={{ maxWidth: 1200, margin: '0 auto' }}>
         <div style={{ textAlign: 'center', marginBottom: 60 }}>
@@ -526,7 +584,7 @@ function ProblemSection() {
           </p>
         </div>
 
-        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 20 }}>
+        <div style={{ display: 'grid', gridTemplateColumns: isMobile ? '1fr' : 'repeat(3, 1fr)', gap: 16 }}>
           {problems.map(p => (
             <div key={p.num} style={{
               background: B.card, borderRadius: 16, padding: '32px 28px',
@@ -559,6 +617,7 @@ function ProblemSection() {
 }
 
 function SolutionSection() {
+  const isMobile = useIsMobile()
   const modules = [
     {
       icon: Package, title: 'Estoque', color: B.highlight,
@@ -590,7 +649,7 @@ function SolutionSection() {
   ]
 
   return (
-    <section id="solucao" style={{ padding: '100px 40px', background: B.bg, position: 'relative', overflow: 'hidden' }}>
+    <section id="solucao" style={{ padding: isMobile ? '64px 20px' : '100px 40px', background: B.bg, position: 'relative', overflow: 'hidden' }}>
       <GlowDot x="70%" y="20%" size={400} opacity={0.05} />
       <div style={{ maxWidth: 1200, margin: '0 auto' }}>
         <div style={{ textAlign: 'center', marginBottom: 60 }}>
@@ -603,7 +662,7 @@ function SolutionSection() {
           </p>
         </div>
 
-        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 20 }}>
+        <div style={{ display: 'grid', gridTemplateColumns: isMobile ? '1fr' : 'repeat(3, 1fr)', gap: 16 }}>
           {modules.map(m => (
             <div key={m.title} style={{
               background: B.card, borderRadius: 16, overflow: 'hidden', border: `1px solid ${B.border}`,
@@ -645,6 +704,7 @@ function SolutionSection() {
 }
 
 function HowItWorksSection() {
+  const isMobile = useIsMobile()
   const steps = [
     { num: '01', icon: BookOpen, title: 'Cadastre', desc: 'Adicione seus produtos, clientes e informações do negócio.' },
     { num: '02', icon: BarChart2, title: 'Registre', desc: 'Registre vendas e movimentações financeiras facilmente.' },
@@ -653,7 +713,7 @@ function HowItWorksSection() {
   ]
 
   return (
-    <section id="como-funciona" style={{ padding: '100px 40px', background: B.bg2, position: 'relative', overflow: 'hidden' }}>
+    <section id="como-funciona" style={{ padding: isMobile ? '64px 20px' : '100px 40px', background: B.bg2, position: 'relative', overflow: 'hidden' }}>
       <div style={{ maxWidth: 1200, margin: '0 auto' }}>
         <div style={{ textAlign: 'center', marginBottom: 64 }}>
           <SectionLabel>COMO FUNCIONA</SectionLabel>
@@ -663,14 +723,15 @@ function HowItWorksSection() {
         </div>
 
         <div style={{ position: 'relative' }}>
-          {/* Connecting line */}
-          <div style={{
-            position: 'absolute', top: 28, left: '12.5%', right: '12.5%', height: 2,
-            background: `linear-gradient(90deg, ${B.blue}, ${B.highlight}, ${B.green})`,
-            opacity: 0.3,
-          }} />
+          {!isMobile && (
+            <div style={{
+              position: 'absolute', top: 28, left: '12.5%', right: '12.5%', height: 2,
+              background: `linear-gradient(90deg, ${B.blue}, ${B.highlight}, ${B.green})`,
+              opacity: 0.3,
+            }} />
+          )}
 
-          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: 20, position: 'relative' }}>
+          <div style={{ display: 'grid', gridTemplateColumns: isMobile ? '1fr 1fr' : 'repeat(4, 1fr)', gap: isMobile ? 24 : 20, position: 'relative' }}>
             {steps.map((s, i) => (
               <div key={s.num} style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', textAlign: 'center' }}>
                 <div style={{
@@ -695,8 +756,9 @@ function HowItWorksSection() {
 }
 
 function DashboardSection() {
+  const isMobile = useIsMobile()
   return (
-    <section id="funcionalidades" style={{ padding: '100px 40px', background: B.bg, position: 'relative', overflow: 'hidden' }}>
+    <section id="funcionalidades" style={{ padding: isMobile ? '64px 20px' : '100px 40px', background: B.bg, position: 'relative', overflow: 'hidden' }}>
       <GlowDot x="50%" y="50%" size={600} opacity={0.04} />
       <div style={{ maxWidth: 1200, margin: '0 auto' }}>
         <div style={{ textAlign: 'center', marginBottom: 56 }}>
@@ -719,6 +781,7 @@ function DashboardSection() {
 }
 
 function ForWhoSection() {
+  const isMobile = useIsMobile()
   const segments = [
     {
       emoji: '🏪', title: 'Lojas', desc: 'Produtos, vendas e fornecedores.',
@@ -739,16 +802,16 @@ function ForWhoSection() {
   ]
 
   return (
-    <section id="para-quem" style={{ padding: '100px 40px', background: B.bg2, position: 'relative' }}>
+    <section id="para-quem" style={{ padding: isMobile ? '64px 20px' : '100px 40px', background: B.bg2, position: 'relative' }}>
       <GlowDot x="80%" y="30%" size={350} opacity={0.05} />
       <div style={{ maxWidth: 1200, margin: '0 auto' }}>
-        <div style={{ textAlign: 'center', marginBottom: 60 }}>
+        <div style={{ textAlign: 'center', marginBottom: 48 }}>
           <SectionLabel>PARA QUEM É</SectionLabel>
-          <h2 style={{ fontFamily: 'Space Grotesk, sans-serif', fontSize: 40, fontWeight: 700, color: B.white, margin: 0 }}>
+          <h2 style={{ fontFamily: 'Space Grotesk, sans-serif', fontSize: isMobile ? 30 : 40, fontWeight: 700, color: B.white, margin: 0 }}>
             Feito para pequenos negócios.
           </h2>
         </div>
-        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: 16 }}>
+        <div style={{ display: 'grid', gridTemplateColumns: isMobile ? '1fr 1fr' : 'repeat(4, 1fr)', gap: 14 }}>
           {segments.map(s => (
             <div key={s.title} style={{
               background: B.card, borderRadius: 16, padding: '28px 24px',
@@ -774,8 +837,9 @@ function ForWhoSection() {
 }
 
 function BenefitsSection() {
+  const isMobile = useIsMobile()
   return (
-    <section style={{ padding: '100px 40px', background: B.bg, position: 'relative', overflow: 'hidden' }}>
+    <section style={{ padding: isMobile ? '64px 20px' : '100px 40px', background: B.bg, position: 'relative', overflow: 'hidden' }}>
       <GlowDot x="50%" y="50%" size={500} opacity={0.05} />
       <div style={{ maxWidth: 1200, margin: '0 auto' }}>
         <div style={{ textAlign: 'center', marginBottom: 72 }}>
@@ -784,7 +848,7 @@ function BenefitsSection() {
             Mais controle. Menos complicação.
           </h2>
         </div>
-        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 1, background: B.border, borderRadius: 20, overflow: 'hidden' }}>
+        <div style={{ display: 'grid', gridTemplateColumns: isMobile ? '1fr' : 'repeat(3, 1fr)', gap: 1, background: B.border, borderRadius: 20, overflow: 'hidden' }}>
           {[
             { icon: Layers, value: '3×', label: 'Mais organização', sub: 'Informações centralizadas em um só lugar', color: B.highlight },
             { icon: Rocket, value: '70%', label: 'Mais agilidade', sub: 'Menos tarefas manuais e processos repetitivos', color: B.green },
@@ -811,6 +875,7 @@ function BenefitsSection() {
 }
 
 function FutureSection() {
+  const isMobile = useIsMobile()
   const steps = [
     { icon: Layers, label: 'Organização', desc: 'Dados centralizados', color: B.highlight },
     { icon: Rocket, label: 'Automação', desc: 'Tarefas automáticas', color: B.light },
@@ -819,7 +884,7 @@ function FutureSection() {
   ]
 
   return (
-    <section style={{ padding: '100px 40px', background: B.bg2, position: 'relative', overflow: 'hidden' }}>
+    <section style={{ padding: isMobile ? '64px 20px' : '100px 40px', background: B.bg2, position: 'relative', overflow: 'hidden' }}>
       <GlowDot x="30%" y="50%" size={500} opacity={0.06} />
       <div style={{ maxWidth: 1200, margin: '0 auto' }}>
         <div style={{ textAlign: 'center', marginBottom: 64 }}>
@@ -837,27 +902,18 @@ function FutureSection() {
           </div>
         </div>
 
-        <div style={{ position: 'relative', display: 'flex', gap: 0, justifyContent: 'center', alignItems: 'center' }}>
-          {steps.map((s, i) => (
-            <div key={s.label} style={{ display: 'flex', alignItems: 'center', flex: 1 }}>
-              <div style={{ flex: 1, textAlign: 'center' }}>
-                <div style={{
-                  width: 64, height: 64, borderRadius: 18, margin: '0 auto 16px',
-                  background: `${s.color}15`, border: `1px solid ${s.color}30`,
-                  display: 'flex', alignItems: 'center', justifyContent: 'center',
-                }}>
-                  <s.icon size={26} color={s.color} />
-                </div>
-                <div style={{ fontFamily: 'Space Grotesk', fontSize: 16, fontWeight: 700, color: B.white, marginBottom: 4 }}>{s.label}</div>
-                <div style={{ fontSize: 12, color: B.muted, fontFamily: 'Inter' }}>{s.desc}</div>
+        <div style={{ position: 'relative', display: 'grid', gridTemplateColumns: isMobile ? '1fr 1fr' : 'repeat(4, 1fr)', gap: isMobile ? 20 : 0, alignItems: 'center', justifyItems: 'center' }}>
+          {steps.map((s) => (
+            <div key={s.label} style={{ textAlign: 'center' }}>
+              <div style={{
+                width: 56, height: 56, borderRadius: 16, margin: '0 auto 14px',
+                background: `${s.color}15`, border: `1px solid ${s.color}30`,
+                display: 'flex', alignItems: 'center', justifyContent: 'center',
+              }}>
+                <s.icon size={24} color={s.color} />
               </div>
-              {i < steps.length - 1 && (
-                <div style={{ display: 'flex', alignItems: 'center', gap: 2, color: B.muted }}>
-                  <div style={{ width: 20, height: 1, background: `linear-gradient(90deg, ${steps[i].color}60, ${steps[i + 1].color}60)` }} />
-                  <ArrowRight size={14} color={B.highlight} />
-                  <div style={{ width: 20, height: 1, background: `linear-gradient(90deg, ${steps[i + 1].color}60, transparent)` }} />
-                </div>
-              )}
+              <div style={{ fontFamily: 'Space Grotesk', fontSize: 15, fontWeight: 700, color: B.white, marginBottom: 4 }}>{s.label}</div>
+              <div style={{ fontSize: 12, color: B.muted, fontFamily: 'Inter' }}>{s.desc}</div>
             </div>
           ))}
         </div>
@@ -867,9 +923,10 @@ function FutureSection() {
 }
 
 function CTASection({ onCTA }: { onCTA: () => void }) {
+  const isMobile = useIsMobile()
   return (
     <section style={{
-      padding: '120px 40px', position: 'relative', overflow: 'hidden',
+      padding: isMobile ? '80px 20px' : '120px 40px', position: 'relative', overflow: 'hidden',
       background: `linear-gradient(160deg, #071A2F 0%, #0A223D 50%, #071A2F 100%)`,
     }}>
       <GlowDot x="50%" y="50%" size={600} opacity={0.1} />
@@ -880,7 +937,7 @@ function CTASection({ onCTA }: { onCTA: () => void }) {
       }} />
       <div style={{ maxWidth: 720, margin: '0 auto', textAlign: 'center', position: 'relative' }}>
         <h2 style={{
-          fontFamily: 'Space Grotesk, sans-serif', fontSize: 52, fontWeight: 700,
+          fontFamily: 'Space Grotesk, sans-serif', fontSize: isMobile ? 34 : 52, fontWeight: 700,
           color: B.white, margin: '0 0 20px', lineHeight: 1.1,
         }}>
           Transforme o caos<br />
